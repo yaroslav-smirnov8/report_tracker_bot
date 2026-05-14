@@ -1,175 +1,133 @@
 # Telegram Report Tracker Bot
 
-Production‑ready Telegram bot for cohort‑style courses and team accountability. Participants submit daily and weekly reports using hashtags; the bot validates them, records progress, sends reminders, and generates an analytics‑rich Excel report.
+## 🚀 Overview
+Telegram Report Tracker Bot is an operations-grade reporting system for cohort programs, accountability groups, and manager-led training environments. It turns everyday Telegram activity into a structured compliance and analytics pipeline: participants submit hashtag-based reports, the bot validates them against course timing rules, automates reminders, and delivers leadership-ready Excel reporting.
 
-## Project Analysis
+## 🎯 Problem
+Teams running multi-week programs often manage participation manually through chat history, spreadsheets, and ad hoc reminders. That creates missed submissions, inconsistent enforcement, weak visibility into progress, and unnecessary coordinator overhead.
 
-### Core Problem
-Teams running multi‑week courses or accountability programs need a low‑friction way to collect daily updates, enforce deadlines, and measure progress without manual tracking.
+## 💡 Solution
+This system embeds reporting directly into the collaboration channel teams already use. It captures daily and weekly submissions in Telegram, tracks performance per participant and per cohort, schedules deadline-aware reminders in each chat's timezone, and generates multi-sheet Excel analytics for admins without introducing a separate dashboard.
 
-### Target Users and Use Cases
-- Course organizers who need automatic progress tracking and reporting.
-- Team leads running daily standups via Telegram.
-- Accountability groups that need reminders and a progress overview.
+## ⚙️ Features
+- Hashtag-driven reporting workflow for daily morning, daily evening, and weekly check-ins
+- Per-chat configuration for course start date, timezone, and reporting conventions
+- Automated reminder pipeline with one-hour and fifteen-minute deadline notifications
+- Late-submission detection and targeted compliance nudges for missing participants
+- Admin-controlled participant lifecycle management inside Telegram
+- Progress visibility for both admins and participants via commands, menus, and DM delivery
+- Excel analytics export with overview metrics, leaderboard, trend charts, attendance heatmap, raw records, and fines
+- Course-aware logic that maps messages to expected day and week numbers across a 63-day program window
+- Persistent SQL-backed state for chats, members, records, settings, fines, and scoring data
 
-### Value Proposition
-- Zero‑friction input via hashtags in Telegram.
-- Automatic reminders and late‑report notifications.
-- Exportable analytics with streaks, trends, and leaderboards.
+## 🧠 Architecture
+The bot is built as a single-process event-driven backend with three main execution paths:
 
-### Constraints and Assumptions
-- Telegram Privacy Mode must be disabled for the bot to read non‑command messages.
-- Course start date and timezone must be configured per group.
-- MySQL/MariaDB is available for persistence.
+1. Telegram updates enter through `python-telegram-bot` handlers.
+2. Messages are validated against course timing, expected hashtag number, and chat-level settings.
+3. Valid submissions are persisted to SQL through SQLAlchemy models.
+4. APScheduler jobs run independently to send reminders, check missing reports, and schedule course completion messages.
+5. Admins can trigger Excel export generation, which aggregates transactional data into decision-friendly analytics sheets.
 
-### AI/LLM Appropriateness
-Not required for core functionality. The current logic is deterministic. LLMs could be added later for natural language summaries, but it is optional.
+Key architectural decisions:
+- Telegram-native UX instead of a custom frontend, reducing adoption friction for real teams
+- Polling-based runtime for simpler deployment and operational reliability
+- Deterministic rules engine instead of LLM-based parsing, which keeps reporting behavior predictable and auditable
+- Per-chat scheduling and timezone support, allowing one bot instance to serve multiple cohorts with different operating cadences
+- Analytics generation as a separate reporting layer, so operational data capture and management reporting stay decoupled
 
-## Architecture Design
-
-### Frontend
-- Telegram chat UI (buttons, commands, inline callbacks)
-- No separate web frontend required
-
-### Backend
-- Python application using python‑telegram‑bot for command and message handling
-- APScheduler for cron‑like background tasks
-- SQLAlchemy for data access
-
-### API Design
-- Telegram Bot API interface (commands + callback queries)
-- No public HTTP API in the current implementation
-
-### AI Layer
-- None in current scope
-- Optional future: LLM summarization of progress and weekly insights
-
-### Data Layer
-- MySQL/MariaDB via SQLAlchemy
-- Tables: chats, members, daily_records, settings, fines
-- Excel export via OpenPyXL
-
-### Infrastructure
-- Single process bot (polling)
-- Suitable for Docker or systemd deployment
-- Horizontal scaling by sharding chats across bot instances (future)
-
-### Security Considerations
-- BOT_TOKEN stored in environment variables
-- DB credentials stored in DB_URL
-- Telegram admin checks for sensitive actions
-
-### Performance Considerations
-- Indexes on chat and date fields for daily checks
-- Batch DB queries for report generation
-- Scheduler load proportional to number of chats
-
-## Tech Stack Selection
-
-### Backend
-- Python 3 + python‑telegram‑bot 13: stable and proven for Telegram bots
-- APScheduler: reliable background scheduling
-- SQLAlchemy: ORM with MySQL support
-- OpenPyXL: Excel analytics output
-
-### Data
-- MySQL/MariaDB: simple to operate, good for transactional workloads
-
-### Infra
-- Docker or systemd deployment
-- Basic CI for linting and unit tests (recommended)
-
-## Repository Structure
-
+```mermaid
+flowchart TD
+    A[Participants in Telegram] --> B[Bot Handlers]
+    B --> C[Validation Layer<br/>day/week logic, hashtags, admin rules]
+    C --> D[SQLAlchemy Persistence]
+    D --> E[(MySQL / MariaDB)]
+    E --> F[Analytics Engine]
+    F --> G[Excel Report for Admins]
+    E --> H[APScheduler Jobs]
+    H --> I[Reminders, Late Checks,<br/>Course Completion Messages]
+    I --> A
 ```
-frontend/
-backend/
-api/
-infra/
-docs/
-tests/
-scripts/
+
+## 🔧 Tech Stack
+- Python 3
+- `python-telegram-bot` 13.15
+- APScheduler 3.10
+- SQLAlchemy 2.0
+- MySQL / MariaDB via PyMySQL
+- OpenPyXL for analytics export
+- PyTZ for timezone-aware scheduling
+- Pytest-based test suite
+
+## 🧪 Example Usage
+Typical operator flow:
+
+1. Admin adds the bot to a Telegram group and disables Privacy Mode for message visibility.
+2. Admin sets the course start date with `/setstartdate 2026-02-01`.
+3. Admin sets the reporting timezone with `/settimezone Europe/Moscow`.
+4. Participants register with `/join` or are auto-recognized when they submit valid reports.
+5. Participants post reports like `#morning12`, `#evening12`, or `#week2`.
+6. The bot records submissions, sends reminder notifications before deadlines, and flags missing reports after cutoff.
+7. Admin requests the Excel export and receives a workbook containing cohort KPIs, leaderboards, trends, and detailed records.
+
+## 🎯 Why This Matters
+For startups:
+This system replaces manual coordination work with lightweight operational automation. Small teams can enforce discipline, measure engagement, and run structured programs without building a separate internal tool.
+
+For AI systems:
+It demonstrates the surrounding infrastructure real AI products need even when the core workflow is deterministic: event ingestion, state management, scheduling, rules enforcement, analytics output, and operator-friendly controls.
+
+For automation:
+It is a concrete example of chat-native workflow automation where the interface, orchestration engine, and reporting pipeline are tightly integrated. The result is a system that fits naturally into how teams already work while still producing structured business data.
+
+## 📈 Possible Extensions
+- Replace polling with webhooks for higher-throughput deployments
+- Add REST or GraphQL APIs for external dashboards and integrations
+- Store scheduler jobs persistently to improve restart resilience
+- Add role-based admin tiers for larger organizations
+- Introduce multi-cohort analytics across groups for portfolio-level reporting
+- Add LLM-generated weekly summaries on top of the existing structured metrics
+- Extend the scoring and fines models into a fuller performance management module
+- Containerize and deploy as a horizontally partitioned multi-instance bot service
+
+## Repository Layout
+```text
+app/
+  core/        database, config, ORM models
+  handlers/    Telegram commands, callbacks, message processing
+  reports/     Excel analytics generation
+  services/    scheduling and settings logic
+tests/         reporting and persistence tests
+main.py        application entrypoint
+requirements.txt
 .env.example
 ```
 
-## Project Overview
-Telegram bot that tracks daily and weekly reports via hashtags, automatically reminds participants, and delivers a detailed Excel analytics report to admins.
-
-## Features
-- Daily/weekly hashtag validation with day/week numbering
-- Per‑chat timezone and start date configuration
-- Automated reminders and late‑report notifications
-- Exportable Excel report with leaderboards, trends, and heatmap
-- Admin controls to manage participants
-
-## Tech Stack
-- Frontend: Telegram UI (commands, buttons)
-- Backend: Python, python‑telegram‑bot, APScheduler, SQLAlchemy
-- Data: MySQL/MariaDB
-- Analytics: OpenPyXL
-- Infra: Docker/systemd compatible
-
-## Architecture Diagram (Textual)
-
-```
-Telegram Users
-   |
-   v
-Telegram Bot API
-   |
-   v
-Python Bot (handlers + scheduler)
-   |
-   +--> SQLAlchemy --> MySQL/MariaDB
-   |
-   +--> OpenPyXL --> Excel report (.xlsx)
+## Run Locally
+```bash
+pip install -r requirements.txt
 ```
 
-## Setup & Run Instructions
+Create a `.env` file:
 
-### Local Development
-1. Install dependencies:
-   ```bash
-   pip install python-telegram-bot==13.* apscheduler sqlalchemy pymysql pytz openpyxl
-   ```
-2. Set environment variables:
-   - `BOT_TOKEN` from BotFather
-   - `DB_URL` MySQL connection string
-3. Run:
-   ```bash
-   python main.py
-   ```
+```env
+BOT_TOKEN=YOUR_BOT_TOKEN_HERE
+DB_URL=mysql+pymysql://botuser:password@localhost/botdb
+LOG_LEVEL=INFO
+```
 
-### Production Notes
-- Run as a systemd service or container
-- Ensure Privacy Mode is disabled for the bot in group chats
-- Use a dedicated MySQL user with limited permissions
+Start the bot:
 
-## Environment Variables
+```bash
+python main.py
+```
 
-| Variable   | Required | Description |
-|------------|----------|-------------|
-| BOT_TOKEN  | Yes      | Telegram bot token |
-| DB_URL     | No       | SQLAlchemy DB URL (default uses local MySQL) |
-| LOG_LEVEL  | No       | Logging level (default INFO) |
+Operational notes:
+- Telegram Privacy Mode must be disabled for the bot to inspect group messages
+- The database schema is created automatically on first run
+- The default deployment model is a long-running single process with background scheduling
 
-## API Overview
-There is no public HTTP API. Interaction is via Telegram commands and inline buttons.
+## Validation
+The repository includes tests for reporting metrics, workbook generation, and daily record updates under `tests/`.
 
-Key commands:
-- `/menu` / `/buttons` — open actions menu
-- `/join` — register as participant
-- `/today` — show expected hashtags
-- `/setstartdate YYYY-MM-DD` — set start date
-- `/settimezone Europe/Moscow` — set timezone
-- `/remove USER_ID` — remove participant
-- `/status` — show current settings
-
-## Roadmap
-- Optional REST API for external dashboards
-- LLM‑based weekly summaries
-- Multi‑instance scaling via job partitioning
-- Persistent job store for APScheduler
-
-## License
-MIT License
+I could not run the suite in this workspace because neither `python` nor `pytest` is installed in the current environment.

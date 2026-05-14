@@ -317,7 +317,6 @@ def schedule_chat_jobs(scheduler, bot, chat_id):
     morning_job_id = f"hashtags_notify_morning_{chat_id}"
     evening_job_id = f"hashtags_notify_evening_{chat_id}"
     week_job_id = f"hashtags_notify_week_{chat_id}"
-
     morning_hour_reminder = (datetime.combine(datetime.today(), morning_time) - timedelta(hours=1)).time()
     morning_fifteen_minute_reminder = (
         datetime.combine(datetime.today(), morning_time) - timedelta(minutes=15)).time()

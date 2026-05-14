@@ -782,7 +782,6 @@ def handle_message(update, context):
                 logger.info(f"Hashtag found {format_log_context(chat_id, user_id)}: {text_to_process}")
 
                 add_member_to_chat(chat_id, user_id, user_name, first_name, last_name)
-
                 morning_deadline = time(10, 1)
                 evening_deadline = time(23, 59)
 

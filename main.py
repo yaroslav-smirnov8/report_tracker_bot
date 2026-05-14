@@ -11,7 +11,6 @@ def main():
     if not BOT_TOKEN:
         raise RuntimeError("BOT_TOKEN is not set")
 
-    # Database must be ready before the bot starts scheduling or handling updates.
     init_db()
 
     # Telegram bot setup is intentionally minimal here to keep entry point readable.
